@@ -16,141 +16,134 @@ VIDEO_URL = f"http://{PHONE_IP}:{PHONE_PORT}/video"
 
 
 # ============================================================
-#                    2. 管道参数
+#                    2. 管道实际长度
 # ============================================================
 
-# 管道实际长度
 PIPE_LENGTH_CM = 25.0
 
-# 管道在画面中的固定位置
-#
-# 你已经可以固定手机和管道，
-# 所以这里直接固定。
-#
-PIPE_X1 = 120
-PIPE_X2 = 1160
-
-PIPE_Y_TOP = 300
-PIPE_Y_BOTTOM = 430
-
-PIPE_Y_CENTER = (
-    PIPE_Y_TOP + PIPE_Y_BOTTOM
-) // 2
-
 
 # ============================================================
-#              3. 管道 HSV
-#
-# !!! 这里的 HSV 只用于识别绿色管道 !!!
-#
-# 钢球完全不使用 HSV 判断。
-#
-# 先用这一组，后面根据你的实际绿色管道
-# 可以继续微调。
-# ============================================================
-
-PIPE_H_LOW = 30
-PIPE_H_HIGH = 95
-
-PIPE_S_LOW = 45
-PIPE_S_HIGH = 255
-
-PIPE_V_LOW = 20
-PIPE_V_HIGH = 255
-
-
-# ============================================================
-#                    4. 钢球大小
-#
-# 这里不判断钢球颜色。
-#
-# 只判断：
-#     面积
-#     半径
-#     圆形度
-#     宽高比
-#     是否位于管道内部
-#
-# ============================================================
-
-MIN_BALL_AREA = 30
-MAX_BALL_AREA = 1800
-
-MIN_BALL_RADIUS = 4
-MAX_BALL_RADIUS = 35
-
-MIN_CIRCULARITY = 0.35
-
-MIN_ASPECT_RATIO = 0.55
-MAX_ASPECT_RATIO = 1.80
-
-
-# ============================================================
-#              5. 钢球允许的竖直位置
-#
-# 钢球只会在管道内部。
-#
-# ============================================================
-
-BALL_ZONE_TOP_RATIO = 0.15
-BALL_ZONE_BOTTOM_RATIO = 0.85
-
-
-# ============================================================
-#                    6. 锁定参数
-# ============================================================
-
-# 已经锁定以后，只在附近寻找
-TRACK_SEARCH_WIDTH = 160
-TRACK_SEARCH_HEIGHT = 100
-
-# 短暂丢球时扩大搜索
-LOST_SEARCH_WIDTH = 260
-LOST_SEARCH_HEIGHT = 130
-
-# 连续多少帧找不到才重新全范围搜索
-MAX_LOST_FRAMES = 8
-
-
-# ============================================================
-#                    7. 防止钢球跳点
-# ============================================================
-
-# 单帧最大允许移动
-#
-# 这是防止误识别，不是速度上限。
-#
-MAX_SINGLE_JUMP_CM = 2.0
-
-# 最大合理速度
-#
-# 如果突然超过这个速度，
-# 程序不会直接接受新目标。
-MAX_REASONABLE_SPEED_CM_S = 100.0
-
-
-# 自检需要连续多少帧确认
-VERIFY_FRAMES = 2
-
-
-# ============================================================
-#                    8. 速度滤波
-# ============================================================
-
-VELOCITY_ALPHA = 0.25
-
-
-# ============================================================
-#                9. 真实 FPS
+#                    3. 图像处理
 # ============================================================
 
 PROCESS_WIDTH = 1280
 
 
 # ============================================================
-#             10. 最新帧摄像头
+#              4. 管道 HSV
 #
-# 永远只保留最新帧，避免 IP 摄像头缓存。
+# 只用于识别绿色管道
+# 不用于判断钢球颜色
+# ============================================================
+
+PIPE_H_LOW = 50
+PIPE_H_HIGH = 90
+
+PIPE_S_LOW = 40
+PIPE_S_HIGH = 180
+
+PIPE_V_LOW = 25
+PIPE_V_HIGH = 200
+
+
+# ============================================================
+#              5. 管道位置自动检测参数
+# ============================================================
+
+MIN_PIPE_AREA = 3000
+
+
+# ============================================================
+#              6. 钢球大小约束
+#
+# 不判断钢球 HSV
+#
+# 只利用：
+#     面积
+#     圆形度
+#     半径
+#     宽高比
+# ============================================================
+
+MIN_BALL_AREA = 20
+MAX_BALL_AREA = 1800
+
+MIN_BALL_RADIUS = 4
+MAX_BALL_RADIUS = 35
+
+MIN_CIRCULARITY = 0.30
+
+MIN_ASPECT_RATIO = 0.45
+MAX_ASPECT_RATIO = 2.20
+
+
+# ============================================================
+#              7. 钢球在管道里面的范围
+# ============================================================
+
+BALL_VERTICAL_RATIO_TOP = 0.15
+BALL_VERTICAL_RATIO_BOTTOM = 0.85
+
+
+# ============================================================
+#              8. 锁定参数
+# ============================================================
+
+TRACK_SEARCH_WIDTH = 180
+TRACK_SEARCH_HEIGHT = 110
+
+LOST_SEARCH_WIDTH = 300
+LOST_SEARCH_HEIGHT = 150
+
+MAX_LOST_FRAMES = 8
+
+
+# ============================================================
+#              9. 防止钢球跳点
+#
+# 注意：
+#
+# 这里不再使用“速度过大”判断误判。
+#
+# 改成：
+#
+#     单帧位置跳跃过大
+#     OR
+#     加速度过大
+#
+# ============================================================
+
+MAX_SINGLE_JUMP_CM = 2.0
+
+# 最大允许加速度
+#
+# 单位：cm/s²
+#
+# 这个值是“防止视觉误判”的阈值，
+# 不是说钢球物理上绝对不可能超过这个加速度。
+#
+# 如果后面发现真实钢球运动时经常触发自检，
+# 再适当提高这个值。
+#
+MAX_REASONABLE_ACCELERATION_CM_S2 = 1200.0
+
+
+# ============================================================
+#              10. 速度滤波
+#
+# 速度仍然需要计算：
+#
+#     1. 预测下一帧位置
+#     2. 计算加速度
+#
+# 但不显示在画面中。
+# ============================================================
+
+VELOCITY_ALPHA = 0.20
+
+
+# ============================================================
+#              11. 摄像头最新帧
 # ============================================================
 
 class LatestFrameCamera:
@@ -218,7 +211,7 @@ class LatestFrameCamera:
         self.running = False
 
         self.thread.join(
-            timeout=1
+            timeout=1.0
         )
 
         self.cap.release()
@@ -244,49 +237,348 @@ def clamp(
 
 
 # ============================================================
-#                    图像缩放
+#                    缩放画面
 # ============================================================
 
 def resize_frame(frame):
 
-    height, width = frame.shape[:2]
+    h, w = frame.shape[:2]
 
-    if width <= PROCESS_WIDTH:
+    if w <= PROCESS_WIDTH:
 
         return frame
 
     scale = (
-        PROCESS_WIDTH / width
+        PROCESS_WIDTH
+        /
+        w
     )
 
-    new_width = PROCESS_WIDTH
+    new_w = PROCESS_WIDTH
 
-    new_height = int(
-        height * scale
+    new_h = int(
+        h * scale
     )
 
     return cv2.resize(
         frame,
         (
-            new_width,
-            new_height
+            new_w,
+            new_h
         ),
         interpolation=cv2.INTER_AREA
     )
 
 
 # ============================================================
-#               创建管道绿色 Mask
-#
-# 只有管道使用 HSV。
+#                创建管道绿色 Mask
 # ============================================================
 
 def create_pipe_mask(frame):
 
+    hsv = cv2.cvtColor(
+        frame,
+        cv2.COLOR_BGR2HSV
+    )
+
+
+    lower = np.array(
+        [
+            PIPE_H_LOW,
+            PIPE_S_LOW,
+            PIPE_V_LOW
+        ],
+        dtype=np.uint8
+    )
+
+
+    upper = np.array(
+        [
+            PIPE_H_HIGH,
+            PIPE_S_HIGH,
+            PIPE_V_HIGH
+        ],
+        dtype=np.uint8
+    )
+
+
+    mask = cv2.inRange(
+        hsv,
+        lower,
+        upper
+    )
+
+
+    # --------------------------------------------------------
+    # 横向连接管道
+    # --------------------------------------------------------
+
+    kernel_close = cv2.getStructuringElement(
+        cv2.MORPH_RECT,
+        (
+            31,
+            7
+        )
+    )
+
+
+    mask = cv2.morphologyEx(
+        mask,
+        cv2.MORPH_CLOSE,
+        kernel_close
+    )
+
+
+    # --------------------------------------------------------
+    # 去小噪声
+    # --------------------------------------------------------
+
+    kernel_open = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (
+            5,
+            5
+        )
+    )
+
+
+    mask = cv2.morphologyEx(
+        mask,
+        cv2.MORPH_OPEN,
+        kernel_open
+    )
+
+
+    return mask
+
+
+# ============================================================
+#              自动寻找绿色管道
+# ============================================================
+
+def find_pipe(frame):
+
+    mask = create_pipe_mask(
+        frame
+    )
+
+
+    contours, _ = cv2.findContours(
+        mask,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+
+    if not contours:
+
+        return None
+
+
+    candidates = []
+
+
+    for contour in contours:
+
+        area = cv2.contourArea(
+            contour
+        )
+
+
+        if area < MIN_PIPE_AREA:
+
+            continue
+
+
+        x, y, w, h = cv2.boundingRect(
+            contour
+        )
+
+
+        if w < 300:
+
+            continue
+
+
+        if h < 20:
+
+            continue
+
+
+        aspect = (
+            w /
+            max(
+                h,
+                1
+            )
+        )
+
+
+        if aspect < 3.0:
+
+            continue
+
+
+        candidates.append(
+            (
+                area,
+                x,
+                y,
+                w,
+                h
+            )
+        )
+
+
+    if not candidates:
+
+        return None
+
+
+    candidates.sort(
+        reverse=True
+    )
+
+
+    _, x, y, w, h = candidates[0]
+
+
+    # --------------------------------------------------------
+    # 给管道留一点余量
+    # --------------------------------------------------------
+
+    padding_x = 5
+    padding_y = 5
+
+
+    x1 = max(
+        0,
+        x - padding_x
+    )
+
+
+    y1 = max(
+        0,
+        y - padding_y
+    )
+
+
+    x2 = min(
+        frame.shape[1],
+        x + w + padding_x
+    )
+
+
+    y2 = min(
+        frame.shape[0],
+        y + h + padding_y
+    )
+
+
+    return (
+        x1,
+        y1,
+        x2,
+        y2
+    )
+
+
+# ============================================================
+#              计算钢球圆形度
+# ============================================================
+
+def circularity(contour):
+
+    area = cv2.contourArea(
+        contour
+    )
+
+
+    perimeter = cv2.arcLength(
+        contour,
+        True
+    )
+
+
+    if perimeter <= 0:
+
+        return 0.0
+
+
+    return (
+        4.0
+        * np.pi
+        * area
+        /
+        (
+            perimeter
+            *
+            perimeter
+        )
+    )
+
+
+# ============================================================
+#             获取钢球搜索区域
+# ============================================================
+
+def get_ball_zone(
+    pipe_box
+):
+
+    x1, y1, x2, y2 = pipe_box
+
+
+    pipe_height = (
+        y2 - y1
+    )
+
+
+    zone_top = int(
+        y1
+        +
+        pipe_height
+        *
+        BALL_VERTICAL_RATIO_TOP
+    )
+
+
+    zone_bottom = int(
+        y1
+        +
+        pipe_height
+        *
+        BALL_VERTICAL_RATIO_BOTTOM
+    )
+
+
+    return (
+        x1,
+        zone_top,
+        x2,
+        zone_bottom
+    )
+
+
+# ============================================================
+#              创建管道内部非绿色区域
+# ============================================================
+
+def create_non_green_inside_pipe(
+    frame,
+    pipe_box
+):
+
+    x1, y1, x2, y2 = get_ball_zone(
+        pipe_box
+    )
+
+
     roi = frame[
-        PIPE_Y_TOP:PIPE_Y_BOTTOM,
-        PIPE_X1:PIPE_X2
+        y1:y2,
+        x1:x2
     ]
+
 
     if roi.size == 0:
 
@@ -308,6 +600,7 @@ def create_pipe_mask(frame):
         dtype=np.uint8
     )
 
+
     upper = np.array(
         [
             PIPE_H_HIGH,
@@ -318,7 +611,7 @@ def create_pipe_mask(frame):
     )
 
 
-    mask = cv2.inRange(
+    pipe_mask = cv2.inRange(
         hsv,
         lower,
         upper
@@ -326,250 +619,192 @@ def create_pipe_mask(frame):
 
 
     # --------------------------------------------------------
-    # 对管道背景降噪
+    # 绿色 = 管道
+    # 非绿色 = 候选钢球/其他物体
     # --------------------------------------------------------
 
-    kernel = np.ones(
-        (5, 5),
-        np.uint8
-    )
-
-    mask = cv2.morphologyEx(
-        mask,
-        cv2.MORPH_OPEN,
-        kernel
-    )
-
-    mask = cv2.morphologyEx(
-        mask,
-        cv2.MORPH_CLOSE,
-        kernel
-    )
-
-
-    return mask
-
-
-# ============================================================
-#              计算轮廓圆形度
-# ============================================================
-
-def get_circularity(contour):
-
-    area = cv2.contourArea(
-        contour
-    )
-
-    perimeter = cv2.arcLength(
-        contour,
-        True
-    )
-
-    if perimeter <= 0:
-
-        return 0.0
-
-    return (
-        4.0
-        * np.pi
-        * area
-        /
-        (
-            perimeter
-            *
-            perimeter
-        )
-    )
-
-
-# ============================================================
-#              创建“非管道”区域
-#
-# 思路：
-#
-#     绿色 = 管道
-#
-# 所以：
-#
-#     非绿色 = 候选钢球 / 噪声
-#
-# 然后通过面积、圆形度、位置筛选。
-# ============================================================
-
-def create_non_pipe_mask(frame):
-
-    roi = frame[
-        PIPE_Y_TOP:PIPE_Y_BOTTOM,
-        PIPE_X1:PIPE_X2
-    ]
-
-    if roi.size == 0:
-
-        return None
-
-
-    pipe_mask = create_pipe_mask(
-        frame
-    )
-
-
-    if pipe_mask is None:
-
-        return None
-
-
-    # --------------------------------------------------------
-    # 非绿色部分
-    # --------------------------------------------------------
-
-    non_pipe = cv2.bitwise_not(
+    non_green = cv2.bitwise_not(
         pipe_mask
     )
 
 
     # --------------------------------------------------------
-    # 钢球所在区域
-    #
-    # 只处理管道中间部分，减少白纸、桌面的干扰。
+    # 轻量去噪
     # --------------------------------------------------------
 
-    h, w = non_pipe.shape
-
-    zone_y1 = int(
-        h * BALL_ZONE_TOP_RATIO
-    )
-
-    zone_y2 = int(
-        h * BALL_ZONE_BOTTOM_RATIO
-    )
-
-
-    zone = np.zeros_like(
-        non_pipe
+    kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE,
+        (
+            3,
+            3
+        )
     )
 
 
-    zone[
-        zone_y1:zone_y2,
-        :
-    ] = 255
-
-
-    non_pipe = cv2.bitwise_and(
-        non_pipe,
-        zone
-    )
-
-
-    # --------------------------------------------------------
-    # 去掉非常小的噪声
-    # --------------------------------------------------------
-
-    kernel = np.ones(
-        (3, 3),
-        np.uint8
-    )
-
-    non_pipe = cv2.morphologyEx(
-        non_pipe,
+    non_green = cv2.morphologyEx(
+        non_green,
         cv2.MORPH_OPEN,
         kernel
     )
 
-    non_pipe = cv2.morphologyEx(
-        non_pipe,
-        cv2.MORPH_CLOSE,
-        kernel
+
+    return (
+        non_green,
+        x1,
+        y1
     )
 
 
-    return non_pipe
-
-
 # ============================================================
-#             找候选钢球
-#
-# 注意：
-#
-# 完全不看钢球 HSV。
-#
+#             判断钢球周围是不是绿色
 # ============================================================
 
-def find_ball_candidates(
-    frame,
-    search_box
+def green_surround_score(
+    hsv,
+    x,
+    y,
+    radius
 ):
 
-    x1, y1, x2, y2 = search_box
-
-    frame_h, frame_w = frame.shape[:2]
+    h, w = hsv.shape[:2]
 
 
-    x1 = clamp(
-        x1,
+    outer = max(
+        int(radius * 2.5),
+        10
+    )
+
+
+    inner = max(
+        int(radius * 1.3),
+        5
+    )
+
+
+    x1 = max(
         0,
-        frame_w - 1
+        int(x - outer)
     )
 
-    y1 = clamp(
-        y1,
+
+    y1 = max(
         0,
-        frame_h - 1
+        int(y - outer)
     )
 
-    x2 = clamp(
-        x2,
-        1,
-        frame_w
+
+    x2 = min(
+        w,
+        int(x + outer + 1)
     )
 
-    y2 = clamp(
-        y2,
-        1,
-        frame_h
+
+    y2 = min(
+        h,
+        int(y + outer + 1)
     )
 
 
     if x2 <= x1 or y2 <= y1:
 
-        return []
+        return 0.0
 
 
-    # --------------------------------------------------------
-    # 整个管道区域的非管道 Mask
-    # --------------------------------------------------------
-
-    non_pipe = create_non_pipe_mask(
-        frame
-    )
-
-
-    if non_pipe is None:
-
-        return []
-
-
-    # --------------------------------------------------------
-    # 截取搜索范围
-    # --------------------------------------------------------
-
-    search = non_pipe[
+    local = hsv[
         y1:y2,
         x1:x2
     ]
 
 
-    if search.size == 0:
+    yy, xx = np.ogrid[
+        y1:y2,
+        x1:x2
+    ]
+
+
+    distance = np.sqrt(
+        (xx - x) ** 2
+        +
+        (yy - y) ** 2
+    )
+
+
+    ring = (
+        (distance >= inner)
+        &
+        (distance <= outer)
+    )
+
+
+    if not np.any(ring):
+
+        return 0.0
+
+
+    H = local[:, :, 0]
+    S = local[:, :, 1]
+    V = local[:, :, 2]
+
+
+    green = (
+        (H >= PIPE_H_LOW)
+        &
+        (H <= PIPE_H_HIGH)
+        &
+        (S >= PIPE_S_LOW)
+        &
+        (V >= PIPE_V_LOW)
+    )
+
+
+    return float(
+        green[ring].mean()
+    )
+
+
+# ============================================================
+#              在管道内部寻找钢球
+# ============================================================
+
+def find_ball_candidates(
+    frame,
+    pipe_box
+):
+
+    result = create_non_green_inside_pipe(
+        frame,
+        pipe_box
+    )
+
+
+    if result is None:
 
         return []
 
 
-    # --------------------------------------------------------
-    # 找轮廓
-    # --------------------------------------------------------
+    non_green, offset_x, offset_y = (
+        result
+    )
+
+
+    zone_x1, zone_y1, zone_x2, zone_y2 = (
+        get_ball_zone(
+            pipe_box
+        )
+    )
+
+
+    hsv_roi = cv2.cvtColor(
+        frame[
+            zone_y1:zone_y2,
+            zone_x1:zone_x2
+        ],
+        cv2.COLOR_BGR2HSV
+    )
+
 
     contours, _ = cv2.findContours(
-        search,
+        non_green,
         cv2.RETR_EXTERNAL,
         cv2.CHAIN_APPROX_SIMPLE
     )
@@ -580,14 +815,14 @@ def find_ball_candidates(
 
     for contour in contours:
 
+        # ----------------------------------------------------
+        # 面积
+        # ----------------------------------------------------
+
         area = cv2.contourArea(
             contour
         )
 
-
-        # ====================================================
-        # 1. 面积
-        # ====================================================
 
         if area < MIN_BALL_AREA:
 
@@ -599,64 +834,57 @@ def find_ball_candidates(
             continue
 
 
-        # ====================================================
-        # 2. 圆形度
-        # ====================================================
+        # ----------------------------------------------------
+        # 圆形度
+        # ----------------------------------------------------
 
-        circularity = get_circularity(
+        shape = circularity(
             contour
         )
 
 
-        if circularity < MIN_CIRCULARITY:
+        if shape < MIN_CIRCULARITY:
 
             continue
 
 
-        # ====================================================
-        # 3. 外接矩形
-        # ====================================================
+        # ----------------------------------------------------
+        # 外接矩形
+        # ----------------------------------------------------
 
-        rx, ry, rw, rh = cv2.boundingRect(
+        bx, by, bw, bh = cv2.boundingRect(
             contour
         )
 
 
-        if rw <= 0 or rh <= 0:
+        if bw <= 0 or bh <= 0:
 
             continue
 
 
-        aspect_ratio = (
-            rw / rh
+        aspect = (
+            bw /
+            bh
         )
 
 
-        if (
-            aspect_ratio
-            <
-            MIN_ASPECT_RATIO
-        ):
+        if aspect < MIN_ASPECT_RATIO:
 
             continue
 
 
-        if (
-            aspect_ratio
-            >
-            MAX_ASPECT_RATIO
-        ):
+        if aspect > MAX_ASPECT_RATIO:
 
             continue
 
 
-        # ====================================================
-        # 4. 最小外接圆
-        # ====================================================
+        # ----------------------------------------------------
+        # 最小外接圆
+        # ----------------------------------------------------
 
         (
-            cx,
-            cy
+            _,
+            _
         ), radius = cv2.minEnclosingCircle(
             contour
         )
@@ -672,9 +900,9 @@ def find_ball_candidates(
             continue
 
 
-        # ====================================================
-        # 5. 重心
-        # ====================================================
+        # ----------------------------------------------------
+        # 重心
+        # ----------------------------------------------------
 
         M = cv2.moments(
             contour
@@ -686,119 +914,96 @@ def find_ball_candidates(
             continue
 
 
-        center_x = (
+        cx = (
             M["m10"]
             /
             M["m00"]
         )
 
 
-        center_y = (
+        cy = (
             M["m01"]
             /
             M["m00"]
         )
 
 
-        # ----------------------------------------------------
-        # 转回整张图的坐标
-        # ----------------------------------------------------
-
         global_x = (
-            center_x
+            cx
             +
-            x1
+            offset_x
         )
+
 
         global_y = (
-            center_y
+            cy
             +
-            y1
+            offset_y
         )
 
 
-        # ====================================================
-        # 6. 候选评分
-        #
-        # 这里最重要的是：
-        #
-        # 圆形
-        # +
-        # 尺寸
-        # +
-        # 位置
-        #
-        # ====================================================
+        # ----------------------------------------------------
+        # 周围绿色
+        # ----------------------------------------------------
 
-        circle_score = min(
-            circularity,
+        ring_score = green_surround_score(
+
+            hsv_roi,
+
+            cx,
+
+            cy,
+
+            radius
+
+        )
+
+
+        if ring_score < 0.20:
+
+            continue
+
+
+        # ----------------------------------------------------
+        # 综合评分
+        # ----------------------------------------------------
+
+        shape_score = min(
+            shape,
             1.0
         )
 
 
-        # ----------------------------------------------------
-        # 理想钢球圆形度
-        # ----------------------------------------------------
+        if shape_score >= 0.75:
 
-        if circle_score >= 0.80:
+            shape_bonus = 1.0
 
-            shape_score = 1.0
+        elif shape_score >= 0.55:
 
-        elif circle_score >= 0.60:
-
-            shape_score = 0.8
+            shape_bonus = 0.8
 
         else:
 
-            shape_score = 0.5
+            shape_bonus = 0.5
 
 
-        # ----------------------------------------------------
-        # 半径评分
-        # ----------------------------------------------------
-
-        radius_center = (
-            MIN_BALL_RADIUS
-            +
-            MAX_BALL_RADIUS
-        ) / 2.0
-
-
-        radius_range = (
-            MAX_BALL_RADIUS
-            -
-            MIN_BALL_RADIUS
-        ) / 2.0
-
-
-        radius_score = max(
-            0.0,
+        ring_bonus = min(
+            ring_score,
             1.0
-            -
-            abs(
-                radius
-                -
-                radius_center
-            )
-            /
-            max(
-                radius_range,
-                1
-            )
         )
 
 
         score = (
 
-            shape_score
+            shape_bonus
             *
-            0.55
+            0.50
 
             +
 
-            radius_score
+            ring_bonus
             *
-            0.45
+            0.50
 
         )
 
@@ -809,16 +1014,13 @@ def find_ball_candidates(
                 "y": global_y,
                 "radius": radius,
                 "area": area,
-                "circularity": circularity,
-                "aspect_ratio": aspect_ratio,
+                "circularity": shape,
+                "aspect": aspect,
+                "ring_score": ring_score,
                 "score": score
             }
         )
 
-
-    # ========================================================
-    # 排序
-    # ========================================================
 
     candidates.sort(
         key=lambda item:
@@ -831,23 +1033,13 @@ def find_ball_candidates(
 
 
 # ============================================================
-#                 选择正确的钢球
-#
-# 如果已经锁定：
-#
-#     离预测位置近
-#     +
-#     大小相似
-#     +
-#     圆形度好
-#
-# 才接受。
+#              根据上一帧选择钢球
 # ============================================================
 
-def choose_candidate(
+def choose_ball(
     candidates,
-    previous_ball=None,
-    predicted_position=None,
+    previous_ball,
+    predicted_position,
     strict=False
 ):
 
@@ -857,7 +1049,7 @@ def choose_candidate(
 
 
     # ========================================================
-    # 第一次寻找
+    # 第一次搜索
     # ========================================================
 
     if previous_ball is None:
@@ -870,30 +1062,23 @@ def choose_candidate(
     best_score = -999.0
 
 
-    # ========================================================
-    # 已经锁定
-    # ========================================================
-
     for candidate in candidates:
 
-        cx = candidate["x"]
-        cy = candidate["y"]
-
-
         # ----------------------------------------------------
-        # 距离上一位置
+        # 距离预测位置
         # ----------------------------------------------------
 
         dx = (
-            cx
+            candidate["x"]
             -
-            previous_ball["x"]
+            predicted_position[0]
         )
 
+
         dy = (
-            cy
+            candidate["y"]
             -
-            previous_ball["y"]
+            predicted_position[1]
         )
 
 
@@ -904,50 +1089,16 @@ def choose_candidate(
         )
 
 
-        # ----------------------------------------------------
-        # 预测位置
-        # ----------------------------------------------------
-
-        if predicted_position is not None:
-
-            pdx = (
-                cx
-                -
-                predicted_position[0]
-            )
-
-            pdy = (
-                cy
-                -
-                predicted_position[1]
-            )
-
-
-            predicted_distance = math.sqrt(
-                pdx * pdx
-                +
-                pdy * pdy
-            )
-
-        else:
-
-            predicted_distance = distance
-
-
-        # ----------------------------------------------------
-        # 附近候选优先
-        # ----------------------------------------------------
-
         max_distance = (
 
-            55
+            60
             if strict
             else 100
 
         )
 
 
-        if predicted_distance > max_distance:
+        if distance > max_distance:
 
             continue
 
@@ -956,19 +1107,19 @@ def choose_candidate(
             0.0,
             1.0
             -
-            predicted_distance
+            distance
             /
             max_distance
         )
 
 
         # ----------------------------------------------------
-        # 半径一致性
+        # 半径稳定
         # ----------------------------------------------------
 
-        old_radius = previous_ball[
-            "radius"
-        ]
+        old_radius = (
+            previous_ball["radius"]
+        )
 
 
         radius_ratio = (
@@ -985,28 +1136,27 @@ def choose_candidate(
 
         if strict:
 
-            radius_ok = (
+            if not (
                 0.70
                 <=
                 radius_ratio
                 <=
                 1.30
-            )
+            ):
+
+                continue
 
         else:
 
-            radius_ok = (
+            if not (
                 0.55
                 <=
                 radius_ratio
                 <=
                 1.50
-            )
+            ):
 
-
-        if not radius_ok:
-
-            continue
+                continue
 
 
         radius_score = max(
@@ -1022,20 +1172,20 @@ def choose_candidate(
 
 
         # ----------------------------------------------------
-        # 最终评分
+        # 总评分
         # ----------------------------------------------------
 
         total_score = (
 
             candidate["score"]
             *
-            0.45
+            0.50
 
             +
 
             distance_score
             *
-            0.40
+            0.35
 
             +
 
@@ -1048,7 +1198,9 @@ def choose_candidate(
 
         if total_score > best_score:
 
-            best_score = total_score
+            best_score = (
+                total_score
+            )
 
             best = candidate
 
@@ -1057,28 +1209,24 @@ def choose_candidate(
 
 
 # ============================================================
-#                    像素 → cm
+#                  像素 → cm
 # ============================================================
 
 def pixel_to_position_cm(
-    x
+    x,
+    pipe_box
 ):
 
+    x1, _, x2, _ = pipe_box
+
+
     center_x = (
-
-        PIPE_X1
-        +
-        PIPE_X2
-
+        x1 + x2
     ) / 2.0
 
 
     pipe_pixel_length = (
-
-        PIPE_X2
-        -
-        PIPE_X1
-
+        x2 - x1
     )
 
 
@@ -1103,13 +1251,14 @@ def pixel_to_position_cm(
 
 
 # ============================================================
-#                    像素速度 → cm/s
+#                  速度计算
 # ============================================================
 
 def calculate_speed(
     current_x,
     previous_x,
-    dt
+    dt,
+    pipe_box
 ):
 
     if dt <= 0:
@@ -1117,32 +1266,28 @@ def calculate_speed(
         return 0.0
 
 
-    dx_pixel = (
-        current_x
-        -
-        previous_x
+    x1, _, x2, _ = pipe_box
+
+
+    pipe_length_pixel = (
+        x2 - x1
     )
 
 
-    pipe_pixel_length = (
-
-        PIPE_X2
-        -
-        PIPE_X1
-
-    )
-
-
-    if pipe_pixel_length <= 0:
+    if pipe_length_pixel <= 0:
 
         return 0.0
 
 
     dx_cm = (
 
-        dx_pixel
+        (
+            current_x
+            -
+            previous_x
+        )
         /
-        pipe_pixel_length
+        pipe_length_pixel
         *
         PIPE_LENGTH_CM
 
@@ -1165,7 +1310,7 @@ def main():
     print("=" * 60)
 
     print(
-        "钢球实时检测 / 锁定系统"
+        "钢球固定场景视觉锁定系统"
     )
 
     print("=" * 60)
@@ -1178,14 +1323,6 @@ def main():
         f"管道长度: {PIPE_LENGTH_CM} cm"
     )
 
-    print(
-        f"管道 X: {PIPE_X1} ~ {PIPE_X2}"
-    )
-
-    print(
-        f"管道 Y: {PIPE_Y_TOP} ~ {PIPE_Y_BOTTOM}"
-    )
-
     print()
 
     print(
@@ -1193,7 +1330,7 @@ def main():
     )
 
     print(
-        "R = 重新锁定"
+        "R = 重新搜索"
     )
 
     print()
@@ -1216,7 +1353,7 @@ def main():
     if not camera.cap.isOpened():
 
         print(
-            "手机摄像头连接失败！"
+            "手机摄像头连接失败"
         )
 
         camera.stop()
@@ -1225,13 +1362,15 @@ def main():
 
 
     print(
-        "摄像头连接成功！"
+        "摄像头连接成功"
     )
 
 
     # ========================================================
-    # 钢球状态
+    # 状态
     # ========================================================
+
+    pipe_box = None
 
     ball = None
 
@@ -1239,13 +1378,20 @@ def main():
 
     previous_time = None
 
+    # 当前速度
     velocity_cm_s = 0.0
+
+    # 上一时刻速度
+    previous_velocity_cm_s = 0.0
+
+    # 当前加速度
+    acceleration_cm_s2 = 0.0
 
     lost_frames = 0
 
 
     # ========================================================
-    # 自检状态
+    # 自检
     # ========================================================
 
     verify_mode = False
@@ -1254,7 +1400,7 @@ def main():
 
 
     # ========================================================
-    # FPS
+    # PROCESS FPS
     # ========================================================
 
     process_fps = 0.0
@@ -1263,6 +1409,10 @@ def main():
 
     process_start = time.perf_counter()
 
+
+    # ========================================================
+    # CAMERA FPS
+    # ========================================================
 
     camera_fps = 0.0
 
@@ -1278,20 +1428,18 @@ def main():
         while True:
 
             # =================================================
-            # 读取最新帧
+            # 最新帧
             # =================================================
 
-            frame, frame_id = camera.read()
+            frame, frame_id = (
+                camera.read()
+            )
 
 
             if frame is None:
 
                 continue
 
-
-            # -------------------------------------------------
-            # 缩放
-            # -------------------------------------------------
 
             frame = resize_frame(
                 frame
@@ -1339,7 +1487,9 @@ def main():
 
             if last_frame_id < 0:
 
-                last_frame_id = frame_id
+                last_frame_id = (
+                    frame_id
+                )
 
             elif frame_id != last_frame_id:
 
@@ -1351,7 +1501,9 @@ def main():
 
                 )
 
-                last_frame_id = frame_id
+                last_frame_id = (
+                    frame_id
+                )
 
 
             if (
@@ -1380,50 +1532,169 @@ def main():
 
 
             # =================================================
-            #                计算搜索区域
+            # 自动找管道
             # =================================================
 
-            if ball is None:
+            if (
+                pipe_box is None
+                or
+                ball is None
+            ):
 
-                # ---------------------------------------------
-                # 第一次搜索整条管道
-                # ---------------------------------------------
-
-                search_box = (
-                    PIPE_X1,
-                    int(
-                        PIPE_Y_TOP
-                        +
-                        (
-                            PIPE_Y_BOTTOM
-                            -
-                            PIPE_Y_TOP
-                        )
-                        *
-                        BALL_ZONE_TOP_RATIO
-                    ),
-                    PIPE_X2,
-                    int(
-                        PIPE_Y_TOP
-                        +
-                        (
-                            PIPE_Y_BOTTOM
-                            -
-                            PIPE_Y_TOP
-                        )
-                        *
-                        BALL_ZONE_BOTTOM_RATIO
+                detected_pipe = (
+                    find_pipe(
+                        frame
                     )
                 )
 
 
-                predicted = None
+                if detected_pipe is not None:
 
-            else:
+                    if pipe_box is None:
 
-                # ---------------------------------------------
-                # 根据速度预测
-                # ---------------------------------------------
+                        pipe_box = (
+                            detected_pipe
+                        )
+
+                    else:
+
+                        old = np.array(
+                            pipe_box,
+                            dtype=np.float32
+                        )
+
+
+                        new = np.array(
+                            detected_pipe,
+                            dtype=np.float32
+                        )
+
+
+                        smooth = (
+
+                            old
+                            *
+                            0.75
+
+                            +
+
+                            new
+                            *
+                            0.25
+
+                        )
+
+
+                        pipe_box = tuple(
+
+                            smooth.astype(
+                                int
+                            )
+
+                        )
+
+
+            # =================================================
+            # 管道还没找到
+            # =================================================
+
+            if pipe_box is None:
+
+                cv2.putText(
+
+                    frame,
+
+                    "SEARCHING PIPE...",
+
+                    (
+                        20,
+                        35
+                    ),
+
+                    cv2.FONT_HERSHEY_SIMPLEX,
+
+                    0.7,
+
+                    (0, 0, 255),
+
+                    2
+
+                )
+
+
+                cv2.putText(
+
+                    frame,
+
+                    f"PROC: {process_fps:.1f} FPS",
+
+                    (
+                        frame.shape[1] - 205,
+                        32
+                    ),
+
+                    cv2.FONT_HERSHEY_SIMPLEX,
+
+                    0.60,
+
+                    (255, 255, 255),
+
+                    2
+
+                )
+
+
+                cv2.putText(
+
+                    frame,
+
+                    f"CAM: {camera_fps:.1f} FPS",
+
+                    (
+                        frame.shape[1] - 205,
+                        62
+                    ),
+
+                    cv2.FONT_HERSHEY_SIMPLEX,
+
+                    0.60,
+
+                    (0, 255, 0),
+
+                    2
+
+                )
+
+
+                cv2.imshow(
+                    "Steel Ball Tracking",
+                    frame
+                )
+
+
+                key = (
+                    cv2.waitKey(1)
+                    &
+                    0xFF
+                )
+
+
+                if key == ord("q"):
+
+                    break
+
+
+                continue
+
+
+            # =================================================
+            # 预测钢球
+            # =================================================
+
+            predicted = None
+
+
+            if ball is not None:
 
                 if previous_time is not None:
 
@@ -1437,24 +1708,33 @@ def main():
 
                 else:
 
-                    dt_predict = 0
+                    dt_predict = 0.0
 
 
-                pixel_speed = (
+                pipe_pixel_length = (
 
-                    velocity_cm_s
-
-                    *
-                    (
-                        PIPE_X2
-                        -
-                        PIPE_X1
-                    )
-
-                    /
-                    PIPE_LENGTH_CM
+                    pipe_box[2]
+                    -
+                    pipe_box[0]
 
                 )
+
+
+                if pipe_pixel_length > 0:
+
+                    pixel_speed = (
+
+                        velocity_cm_s
+                        *
+                        pipe_pixel_length
+                        /
+                        PIPE_LENGTH_CM
+
+                    )
+
+                else:
+
+                    pixel_speed = 0.0
 
 
                 predicted_x = (
@@ -1479,9 +1759,19 @@ def main():
                 )
 
 
-                # ---------------------------------------------
-                # 正常搜索
-                # ---------------------------------------------
+            # =================================================
+            # 搜索框
+            # =================================================
+
+            if ball is None:
+
+                search_box = (
+                    get_ball_zone(
+                        pipe_box
+                    )
+                )
+
+            else:
 
                 if lost_frames == 0:
 
@@ -1507,25 +1797,25 @@ def main():
                 search_box = (
 
                     int(
-                        predicted_x
+                        predicted[0]
                         -
                         search_width / 2
                     ),
 
                     int(
-                        predicted_y
+                        predicted[1]
                         -
                         search_height / 2
                     ),
 
                     int(
-                        predicted_x
+                        predicted[0]
                         +
                         search_width / 2
                     ),
 
                     int(
-                        predicted_y
+                        predicted[1]
                         +
                         search_height / 2
                     )
@@ -1534,29 +1824,80 @@ def main():
 
 
             # =================================================
-            # 查找候选
+            # 寻找候选
             # =================================================
 
             candidates = find_ball_candidates(
 
                 frame,
 
-                search_box
+                pipe_box
 
             )
 
 
+            # -------------------------------------------------
+            # 只保留搜索框里的候选
+            # -------------------------------------------------
+
+            sx1, sy1, sx2, sy2 = (
+                search_box
+            )
+
+
+            filtered_candidates = []
+
+
+            for candidate in candidates:
+
+                if (
+
+                    sx1
+                    <=
+                    candidate["x"]
+                    <=
+                    sx2
+
+                    and
+
+                    sy1
+                    <=
+                    candidate["y"]
+                    <=
+                    sy2
+
+                ):
+
+                    filtered_candidates.append(
+                        candidate
+                    )
+
+
+            candidates = (
+                filtered_candidates
+            )
+
+
             # =================================================
-            # 选择候选
+            # 选择目标
             # =================================================
 
-            candidate = choose_candidate(
+            candidate = choose_ball(
 
                 candidates,
 
                 previous_ball=ball,
 
-                predicted_position=predicted,
+                predicted_position=(
+
+                    predicted
+                    if predicted is not None
+                    else (
+                        0,
+                        0
+                    )
+
+                ),
 
                 strict=verify_mode
 
@@ -1564,7 +1905,7 @@ def main():
 
 
             # =================================================
-            # 自检模式
+            # 自检
             # =================================================
 
             if verify_mode:
@@ -1573,33 +1914,33 @@ def main():
 
                     verify_count += 1
 
+
                     if (
                         verify_count
                         >=
-                        VERIFY_FRAMES
+                        2
                     ):
 
                         print(
-                            "[SELF-CHECK] "
-                            "候选不可信，"
-                            "保持原钢球位置。"
+                            "[VERIFY] "
+                            "没有可信候选，"
+                            "保持当前锁定。"
                         )
+
 
                         verify_mode = False
 
                         verify_count = 0
 
-                else:
 
-                    # -----------------------------------------
-                    # 检查跳跃距离
-                    # -----------------------------------------
+                else:
 
                     dx = (
                         candidate["x"]
                         -
                         ball["x"]
                     )
+
 
                     dy = (
                         candidate["y"]
@@ -1614,10 +1955,6 @@ def main():
                         dy * dy
                     )
 
-
-                    # -----------------------------------------
-                    # 检查半径
-                    # -----------------------------------------
 
                     radius_ratio = (
 
@@ -1644,7 +1981,7 @@ def main():
 
                     if (
 
-                        distance <= 55
+                        distance <= 60
 
                         and
 
@@ -1658,15 +1995,8 @@ def main():
                         if (
                             verify_count
                             >=
-                            VERIFY_FRAMES
+                            2
                         ):
-
-                            print(
-                                "[SELF-CHECK] "
-                                "候选通过，"
-                                "恢复锁定。"
-                            )
-
 
                             ball = (
                                 candidate
@@ -1685,10 +2015,15 @@ def main():
 
                             lost_frames = 0
 
-
                             verify_mode = False
 
                             verify_count = 0
+
+
+                            print(
+                                "[VERIFY] "
+                                "重新锁定成功"
+                            )
 
 
                     else:
@@ -1710,106 +2045,73 @@ def main():
 
                     if ball is None:
 
-                        ball = candidate
+                        ball = (
+                            candidate
+                        )
+
 
                         previous_x = (
                             candidate["x"]
                         )
 
+
                         previous_time = now
 
+
                         velocity_cm_s = 0.0
+
+                        previous_velocity_cm_s = 0.0
+
+                        acceleration_cm_s2 = 0.0
 
                         lost_frames = 0
 
 
                         print(
                             "[LOCK] "
-                            "钢球已经锁定"
+                            "钢球锁定成功"
                         )
 
-
-                    # =========================================
-                    # 已经锁定
-                    # =========================================
 
                     else:
 
-                        dx_pixel = (
-
-                            candidate["x"]
-                            -
-                            previous_x
-
-                        )
-
+                        # =====================================
+                        # 计算 dt
+                        # =====================================
 
                         dt = (
-
                             now
                             -
                             previous_time
-
                         )
 
 
-                        raw_speed = calculate_speed(
+                        if dt > 0:
 
-                            candidate["x"],
+                            # ---------------------------------
+                            # 当前瞬时速度
+                            # ---------------------------------
 
-                            previous_x,
+                            raw_speed = (
+                                calculate_speed(
 
-                            dt
+                                    candidate["x"],
 
-                        )
+                                    previous_x,
 
+                                    dt,
 
-                        # -------------------------------------
-                        # 单帧位置变化 cm
-                        # -------------------------------------
+                                    pipe_box
 
-                        jump_cm = abs(
-
-                            dx_pixel
-                            /
-                            max(
-                                PIPE_X2
-                                -
-                                PIPE_X1,
-                                1
+                                )
                             )
-                            *
-                            PIPE_LENGTH_CM
-
-                        )
 
 
-                        # -------------------------------------
-                        # 判断异常
-                        # -------------------------------------
+                            # ---------------------------------
+                            # 平滑后的当前速度
+                            # ---------------------------------
 
-                        suspicious = (
-
-                            jump_cm
-                            >
-                            MAX_SINGLE_JUMP_CM
-
-                            or
-
-                            abs(raw_speed)
-                            >
-                            MAX_REASONABLE_SPEED_CM_S
-
-                        )
-
-
-                        # =====================================
-                        # 正常
-                        # =====================================
-
-                        if not suspicious:
-
-                            velocity_cm_s = (
+                            new_velocity = (
 
                                 (
                                     1
@@ -1825,6 +2127,120 @@ def main():
                                 *
                                 raw_speed
 
+                            )
+
+
+                            # ---------------------------------
+                            # 当前加速度
+                            #
+                            # a = Δv / Δt
+                            # ---------------------------------
+
+                            current_acceleration = (
+
+                                (
+                                    new_velocity
+                                    -
+                                    velocity_cm_s
+                                )
+                                /
+                                dt
+
+                            )
+
+
+                        else:
+
+                            raw_speed = (
+                                velocity_cm_s
+                            )
+
+                            new_velocity = (
+                                velocity_cm_s
+                            )
+
+                            current_acceleration = 0.0
+
+
+                        # =====================================
+                        # 单帧位置跳跃
+                        # =====================================
+
+                        jump_cm = abs(
+
+                            candidate["x"]
+                            -
+                            previous_x
+
+                        )
+
+
+                        jump_cm = (
+
+                            jump_cm
+
+                            /
+
+                            max(
+                                pipe_box[2]
+                                -
+                                pipe_box[0],
+                                1
+                            )
+
+                            *
+
+                            PIPE_LENGTH_CM
+
+                        )
+
+
+                        # =====================================
+                        # 判断疑似误判
+                        #
+                        # 现在只看：
+                        #
+                        # 1. 单帧位置跳跃
+                        # 2. 加速度
+                        #
+                        # 不再直接判断速度
+                        # =====================================
+
+                        suspicious = (
+
+                            jump_cm
+                            >
+                            MAX_SINGLE_JUMP_CM
+
+                            or
+
+                            abs(
+                                current_acceleration
+                            )
+                            >
+                            MAX_REASONABLE_ACCELERATION_CM_S2
+
+                        )
+
+
+                        # =====================================
+                        # 正常
+                        # =====================================
+
+                        if not suspicious:
+
+                            velocity_cm_s = (
+                                new_velocity
+                            )
+
+
+                            previous_velocity_cm_s = (
+                                velocity_cm_s
+                            )
+
+
+                            acceleration_cm_s2 = (
+                                current_acceleration
                             )
 
 
@@ -1847,7 +2263,7 @@ def main():
 
 
                         # =====================================
-                        # 异常跳点
+                        # 异常
                         # =====================================
 
                         else:
@@ -1855,32 +2271,48 @@ def main():
                             print()
                             print(
                                 "[SELF-CHECK] "
-                                "发现疑似误识别！"
+                                "检测到疑似误判!"
                             )
+
 
                             print(
                                 f"原位置: "
                                 f"{previous_x:.1f}px"
                             )
 
+
                             print(
-                                f"新候选: "
+                                f"候选位置: "
                                 f"{candidate['x']:.1f}px"
                             )
+
 
                             print(
                                 f"单帧跳动: "
                                 f"{jump_cm:.2f} cm"
                             )
 
+
                             print(
                                 f"瞬时速度: "
                                 f"{raw_speed:.2f} cm/s"
                             )
 
+
                             print(
-                                "暂时不接受该候选，"
-                                "开始严格验证。"
+                                f"加速度: "
+                                f"{current_acceleration:.2f} cm/s²"
+                            )
+
+
+                            print(
+                                "速度本身不作为误判标准。"
+                            )
+
+
+                            print(
+                                "暂不接受该候选，"
+                                "进入严格自检。"
                             )
 
 
@@ -1889,37 +2321,16 @@ def main():
                             verify_count = 0
 
 
-                # =================================================
-                # 没有候选
-                # =================================================
-
                 else:
 
                     lost_frames += 1
 
 
-                    # ---------------------------------------------
-                    # 短时间没找到
-                    #
-                    # 保持原来的锁定结果
-                    # ---------------------------------------------
-
                     if (
                         lost_frames
-                        <=
+                        >
                         MAX_LOST_FRAMES
                     ):
-
-                        pass
-
-
-                    # ---------------------------------------------
-                    # 长时间没有找到
-                    #
-                    # 重新搜索
-                    # ---------------------------------------------
-
-                    else:
 
                         print(
                             "[LOCK] "
@@ -1936,11 +2347,93 @@ def main():
 
                         velocity_cm_s = 0.0
 
+                        previous_velocity_cm_s = 0.0
+
+                        acceleration_cm_s2 = 0.0
+
                         lost_frames = 0
 
 
             # =================================================
-            #               显示钢球
+            #                    画管道
+            # =================================================
+
+            x1, y1, x2, y2 = pipe_box
+
+
+            center_y = (
+                y1 + y2
+            ) // 2
+
+
+            # 上线
+            cv2.line(
+
+                frame,
+
+                (
+                    x1,
+                    y1
+                ),
+
+                (
+                    x2,
+                    y1
+                ),
+
+                (0, 255, 0),
+
+                2
+
+            )
+
+
+            # 中心线
+            cv2.line(
+
+                frame,
+
+                (
+                    x1,
+                    center_y
+                ),
+
+                (
+                    x2,
+                    center_y
+                ),
+
+                (255, 0, 0),
+
+                2
+
+            )
+
+
+            # 下线
+            cv2.line(
+
+                frame,
+
+                (
+                    x1,
+                    y2
+                ),
+
+                (
+                    x2,
+                    y2
+                ),
+
+                (0, 255, 0),
+
+                2
+
+            )
+
+
+            # =================================================
+            #                    显示钢球
             # =================================================
 
             if ball is not None:
@@ -1953,6 +2446,7 @@ def main():
                     ball["y"]
                 )
 
+
                 radius = max(
                     int(
                         ball["radius"]
@@ -1961,10 +2455,7 @@ def main():
                 )
 
 
-                # ------------------------------------------------
-                # 钢球红圈
-                # ------------------------------------------------
-
+                # 红色锁定圈
                 cv2.circle(
 
                     frame,
@@ -1983,10 +2474,7 @@ def main():
                 )
 
 
-                # ------------------------------------------------
-                # 钢球中心
-                # ------------------------------------------------
-
+                # 中心点
                 cv2.circle(
 
                     frame,
@@ -2009,15 +2497,19 @@ def main():
                 # Position
                 # =================================================
 
-                position_cm = (
+                position = (
                     pixel_to_position_cm(
-                        ball["x"]
+
+                        ball["x"],
+
+                        pipe_box
+
                     )
                 )
 
 
-                distance_cm = abs(
-                    position_cm
+                distance = abs(
+                    position
                 )
 
 
@@ -2029,7 +2521,7 @@ def main():
 
                     state = "VERIFY"
 
-                    state_color = (
+                    color = (
                         0,
                         255,
                         255
@@ -2039,7 +2531,7 @@ def main():
 
                     state = "TRACKING"
 
-                    state_color = (
+                    color = (
                         0,
                         255,
                         255
@@ -2049,16 +2541,12 @@ def main():
 
                     state = "LOCKED"
 
-                    state_color = (
+                    color = (
                         0,
                         255,
                         0
                     )
 
-
-                # ------------------------------------------------
-                # 状态
-                # ------------------------------------------------
 
                 cv2.putText(
 
@@ -2075,16 +2563,12 @@ def main():
 
                     0.7,
 
-                    state_color,
+                    color,
 
                     2
 
                 )
 
-
-                # ------------------------------------------------
-                # Position
-                # ------------------------------------------------
 
                 cv2.putText(
 
@@ -2092,7 +2576,7 @@ def main():
 
                     (
                         f"Position: "
-                        f"{position_cm:+.2f} cm"
+                        f"{position:+.2f} cm"
                     ),
 
                     (
@@ -2111,17 +2595,13 @@ def main():
                 )
 
 
-                # ------------------------------------------------
-                # 距离中心
-                # ------------------------------------------------
-
                 cv2.putText(
 
                     frame,
 
                     (
                         f"Distance: "
-                        f"{distance_cm:.2f} cm"
+                        f"{distance:.2f} cm"
                     ),
 
                     (
@@ -2165,74 +2645,7 @@ def main():
 
 
             # =================================================
-            # 三条水平平行线
-            # =================================================
-
-            cv2.line(
-
-                frame,
-
-                (
-                    PIPE_X1,
-                    PIPE_Y_TOP
-                ),
-
-                (
-                    PIPE_X2,
-                    PIPE_Y_TOP
-                ),
-
-                (0, 255, 0),
-
-                2
-
-            )
-
-
-            cv2.line(
-
-                frame,
-
-                (
-                    PIPE_X1,
-                    PIPE_Y_CENTER
-                ),
-
-                (
-                    PIPE_X2,
-                    PIPE_Y_CENTER
-                ),
-
-                (255, 0, 0),
-
-                2
-
-            )
-
-
-            cv2.line(
-
-                frame,
-
-                (
-                    PIPE_X1,
-                    PIPE_Y_BOTTOM
-                ),
-
-                (
-                    PIPE_X2,
-                    PIPE_Y_BOTTOM
-                ),
-
-                (0, 255, 0),
-
-                2
-
-            )
-
-
-            # =================================================
-            # FPS
+            #                     FPS
             # =================================================
 
             cv2.putText(
@@ -2280,7 +2693,7 @@ def main():
 
 
             # =================================================
-            # 唯一显示窗口
+            # 唯一窗口
             # =================================================
 
             cv2.imshow(
@@ -2324,11 +2737,17 @@ def main():
 
                 velocity_cm_s = 0.0
 
+                previous_velocity_cm_s = 0.0
+
+                acceleration_cm_s2 = 0.0
+
                 lost_frames = 0
 
                 verify_mode = False
 
                 verify_count = 0
+
+                pipe_box = None
 
 
     finally:
